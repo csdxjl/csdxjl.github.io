@@ -194,11 +194,9 @@
 			height: 75vh;
 			width: 75vw;
 			display: flex;
-			align-items: start;
+			align-items: center;
 			justify-content: center;
 			gap: 0.5vh;
-			flex-direction: column;
-			position: relative;
 		}
 
 		.labels {
@@ -333,16 +331,7 @@
 				</div>
 			</div>
 			<div id="lines">
-				<div class="eachline" id="line0"></div>
-				<div class="eachline" id="line1"></div>
-				<div class="eachline" id="line2"></div>
-				<div class="eachline" id="line3"></div>
-				<div class="eachline" id="line4"></div>
-				<div class="eachline" id="line5"></div>
-				<div class="eachline" id="line6"></div>
-				<div class="eachline" id="line7"></div>
-				<div class="eachline" id="line8"></div>
-				<div class="eachline" id="line9"></div>
+
 			</div>
 		</div>
 		<div class="arrows">
@@ -477,6 +466,12 @@
 		const id = `page${pageindex}`;
 		const nextpage = document.getElementById(id);
 		nextpage.classList.add('active');
+		if (pageindex == 2) {
+			intervalid = setInterval(changequotation, animationinterval);
+		} else {
+			clearInterval(intervalid);
+			intervalid = null;
+		}
 	}
 
 	//7777777777777777777777777777777777777777777777777
@@ -507,11 +502,11 @@
 		laoyan: [
 			"不要一下课就上去害那个电脑",
 			"考完试你定反思呢啊",
-			"你的G<sub>排</sub>的物理意义是什么？"
+			"你的G\uFDD5的物理意义是什么？"
 		],
 		laowang: [
 			"lhy我真就打死你了",
-			"以后你就叫F<sub>2</sub>",
+			"以后你就叫F\uFDD4",
 			"好你个zzx"
 		],
 		laozhou: [
@@ -525,13 +520,51 @@
 			"（喘气*2）累死我了"
 		],
 		chun: [
-			"2️⃣🍎™️5️⃣💴",
+			"\uFDD0\uFDD1™\uFDD2\uFDD3",
 			"哎你这就太狭隘了",
-			"他™️要是再敢弄咱们，我收拾他"
+			"他™要是再敢弄咱们，我收拾他"
 		]
 	}
-	const emergeP = 0.2;
-	const pace = 100;
+	//至少每人两条！！！（递归爆栈）
+	const changelist = {
+		' ': '&nbsp;',
+		'™': '™️',
+		'\uFDD0': '2️⃣',
+		'\uFDD1': '🍎',
+		'\uFDD2': '5️⃣',
+		'\uFDD3': '💴',
+		'\uFDD4': '<sub>2</sub>',
+		'\uFDD5': '<sub>排</sub>',
+	}
+	/*
+\uFDD0 7
+\uFDD1 7
+\uFDD2 7
+\uFDD3 7
+\uFDD4 7
+\uFDD5 7
+\uFDD6
+\uFDD7
+\uFDD8
+\uFDD9
+\uFDDA
+\uFDDB
+\uFDDC
+\uFDDD
+\uFDDE
+\uFDDF
+\uFDE0
+\uFDE1
+\uFDE2
+\uFDE3
+	*/
+
+	const animationtime = 1000;
+	const visualtime = 2000;
+	const prebreak = 100;
+	const postbreak = 100;
+	const animationinterval = 2 * animationtime + visualtime + prebreak + postbreak;
+	const charlist = Object.fromEntries(Object.entries(quotations).map(([key, arr]) => ([key, arr.map(e => [...e])])));
 
 	const teacherset = new Set();
 	document.querySelectorAll(".checkboxes").forEach(each => {
@@ -554,62 +587,83 @@
 	function reloadpool() {
 		quotationpool = [];
 		for (const teacher of teacherset) {
-			const tempquotation = quotations[teacher];
+			const tempquotation = charlist[teacher];
 			quotationpool = [...quotationpool, ...tempquotation];
 		}
 	}
 
+	let intervalid = null;
+	let lastquotation = null;
+	let lastid = null;
 
-	const availablelines = new Array(10).fill(true);
-	function animation() {
-		const randomlinei = Math.floor(Math.random() * 10);
-		if (availablelines[randomlinei] && quotationpool.length > 0) {
-			const ramdomi = Math.floor(Math.random() * quotationpool.length);
-			if (Math.random() < emergeP) {
-				createline(quotationpool[ramdomi], randomlinei);
-				availablelines[randomlinei] = false;
-			}
+	function changequotation() {
+		if (quotationpool.length == 0) {
+			return;
 		}
-		quotationdoms.forEach(e => {
-			const dt = Date.now() - Number(e.dataset.time);
-			e.dataset.transx = Number(e.dataset.transx) + pace * dt / 1000;
-			e.style.transform = `translateX(${e.dataset.transx}px)`;
-			e.dataset.time = Date.now();
-			if (e.dataset.transx > width * 0.75) {
-				e.remove();
+		const thisone = randomnorepeat();
+		const charcontainer = document.createElement('div');
+		thisone.forEach(e => {
+			const thischar = document.createElement('span');
+			thischar.style.fontFamily = "'Maple Mono NF CN', system-ui, sans-serif";
+			thischar.style.fontSize = '7vh';
+			thischar.style.color = '#ffffff';
+			if (changelist[e]) {
+				thischar.innerHTML = changelist[e];
+			} else {
+				thischar.innerHTML = e;
 			}
+			thischar.style.willChange = 'transform';
+			thischar.style.transform = randomtransform();
+			thischar.style.display = 'inline-block';
+			thischar.style.opacity = 0;
+			thischar.style.transition = 'all 0.5s ease-in-out';
+			charcontainer.appendChild(thischar);
 		})
-		requestAnimationFrame(animation);
+		if (lastid) {
+			document.getElementById(lastid).remove();
+		}
+		const thisid = Date.now();
+		charcontainer.id = thisid;
+		document.getElementById('lines').appendChild(charcontainer);
+		lastid = thisid;
+		setTimeout(() => {
+			document.getElementById(lastid).querySelectorAll(':scope > span').forEach(e => {
+				e.style.opacity = 1;
+				e.style.transform = 'translate(0,0) rotate(0deg) scale(1)';
+			})
+		}, prebreak);
+		setTimeout(() => {
+			document.getElementById(lastid).querySelectorAll(':scope > span').forEach(e => {
+				e.style.opacity = 0;
+				e.style.transform = randomtransform();
+			})
+		}, animationinterval - animationtime - postbreak);
 	}
 
-	const quotationdoms = [];
-	function createline(randomquotation, linei) {
-		const line = document.createElement("div");
-		line.style.height = '5vh';
-		line.innerHTML = randomquotation;
-		line.style.backgroundColor = '#d1cdff55';
-		line.style.borderRadius = '5px';
-		line.style.color = '#ffffff';
-		line.style.fontFamily = "'Maple Mono NF CN', system-ui, sans-serif";
-		line.style.fontSize = "4vh";
-		line.style.transform = 'translateX(0)';
-		line.style.willChange = 'transform';
-		line.dataset.transx = '0';
-		line.dataset.time = Date.now();
-		line.style.whiteSpace = 'nowrap';
-		line.style.position = 'absolute';
-		const linediv = document.getElementById(`line${linei}`);
-		linediv.appendChild(line);
-		requestAnimationFrame(() => {
-			const width = line.getBoundingClientRect().width;
-			setTimeout(() => {
-				availablelines[linei] = true;
-			}, (width / pace) * 1000 + 1000);
-		});
-		quotationdoms.push(line);
+	function randomnorepeat() {
+		const randomquotationid = Math.floor(Math.random() * quotationpool.length);
+		const thisquotation = quotationpool[randomquotationid];
+		if (thisquotation == lastquotation) {
+			return randomnorepeat();
+		} else {
+			lastquotation = thisquotation;
+			return thisquotation;
+		}
 	}
 
-	animation();//改时机
+	const maxr = 700;
+	const minr = 20;
+	const maxscale = 2;
+	const minscale = 0.5;
+	function randomtransform() {
+		const randomrotation = Math.random() * 360;
+		const randomr = Math.random() * (maxr - minr + 1) + minr;
+		const randomangle = Math.random() * 2 * Math.PI;
+		const randomx = Math.cos(randomangle) * randomr;
+		const randomy = Math.sin(randomangle) * randomr;
+		const randomscale = Math.random() * (maxscale - minscale + 1) + minscale;
+		return `translate(${randomx}px,${randomy}px) rotate(${randomrotation}deg) scale(${randomscale})`;
+	}
 
 </script>
 
